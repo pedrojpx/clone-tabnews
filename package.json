@@ -11,8 +11,8 @@
     "lint:check": "prettier --check .",
     "lint:fix": "prettier --write .",
     "test": "jest",
-    "test:watch": "jest --watchAll",
-    "migration:create": "node-pg-migrate --migrations-dir infra/migrations create",
+    "test:watch": "jest --watchAll --runInBand",
+    "migrations:create": "node-pg-migrate --migrations-dir infra/migrations create",
     "migrations:up": "node-pg-migrate --migrations-dir infra/migrations --envPath .env.development up"
   },
   "author": "",
