@@ -1,12 +1,12 @@
 import database from "infra/database.js";
-import { handleWebpackExternalForEdgeRuntime } from "next/dist/build/webpack/plugins/middleware-plugin";
 import migrationRunner from "node-pg-migrate";
-import { request } from "node:http";
 import { join } from "node:path";
 
 export default async function status(request, response) {
+  const dbClient = await database.getNewClient();
+
   const options = {
-    databaseUrl: process.env.DATABASE_URL,
+    dbClient: dbClient,
     dryRun: true,
     dir: join("infra", "migrations"),
     direction: "up",
@@ -15,29 +15,24 @@ export default async function status(request, response) {
   };
 
   if (request.method === "GET") {
-    handleGET(request, response, options);
+    const pendingMigrations = await migrationRunner(options);
+    await dbClient.end();
+    return response.status(200).json(pendingMigrations);
   }
 
   if (request.method === "POST") {
-    handlePOST(request, response, options);
+    const migratedMigrations = await migrationRunner({
+      ...options,
+      dryRun: false,
+    });
+
+    await dbClient.end();
+
+    if (migratedMigrations.length > 0) {
+      return response.status(201).json(migratedMigrations);
+    }
+    return response.status(200).json(migratedMigrations);
   }
 
   return response.status(405);
-}
-
-async function handleGET(request, response, options) {
-  const pendingMigrations = await migrationRunner(options);
-  response.status(200).json(pendingMigrations);
-}
-
-async function handlePOST(request, response, options) {
-  const migratedMigrations = await migrationRunner({
-    ...options,
-    dryRun: false,
-  });
-
-  if (migratedMigrations.length > 0) {
-    return response.status(201).json(migratedMigrations);
-  }
-  return response.status(200).json(migratedMigrations);
 }
