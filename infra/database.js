@@ -38,7 +38,9 @@ function getSSLValues() {
   return process.env.NODE_ENV === "production" ? true : false;
 }
 
-export default {
+const database = {
   query: query,
   getNewClient, //if export name is same as atrribute,you can omit the attribute name, like done here
 };
+
+export default database;
